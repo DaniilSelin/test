@@ -1,0 +1,32 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+
+db:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: changeme
+  dbname: quotebook
+  sslmode: disable
+  schema: quotebook
+  connectRetries: 5
+  connectRetryDelay: 5s # время
+  pool:
+    maxConns: 10
+    minConns: 5
+    maxConnLifetime: 10s # 1m, 1h
+    maxConnIdleTime: 5s
+    healthCheckPeriod: 5s
+
+logger:
+  level: "debug"
+  development: true
+  encoding: "json"
+  outputPaths: ["stdout"]
+  errorOutputPaths: ["stderr"]
+  encoderConfig:
+    messageKey: "message"
+    levelKey: "level"
+    timeKey: "timestamp"
+    encodeLevel: "lowercase"
