@@ -78,15 +78,22 @@ DELETE /quotes/{id}
 
     go run cmd/main.go
 
-Сервис будет слушать на :8080.
+Либо воспользоваться makefile-ом
+
+    make run
+    make stop # остановаить сервер
+
+Чтобы корректно завершить работу сервиса (gracefull shutdown), достаточно отправить ему сигнал SIGINT
+    
+    sudo kill -SIGINT $(sudo lsof -ti:<порт из конфигурации>)
 
 ### Запуск через Docker Compose
 
-    В корне проекта:
+В корне проекта:
 
     docker-compose up -d --build
 
-После старта контейнеров сервис доступен на http://localhost:8080.
+После старта контейнеров сервис доступен на http://localhost.
 
 ## Тесты
 
