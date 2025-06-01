@@ -26,14 +26,14 @@ func NewQuoteRepository(db *pgxpool.Pool, cfg *config.Config) QuoteRepository {
 func (qr QuoteRepository) CreateQuote(ctx context.Context, q *models.Quote) (int, error) {
 	query := `
  		INSERT INTO quotesbook (
- 			author, text
+ 			author, quote
  		) VALUES ($1, $2)
  		RETURNING id
 	`
 	var id int
     err := qr.db.QueryRow(ctx, query,
         q.Author,
-        q.Text,
+        q.Quote,
     ).Scan(&id)
     if err != nil {
         return 0, errdefs.Wrapf(errdefs.ErrDB, "failed to create quote: %v", err)
@@ -41,9 +41,9 @@ func (qr QuoteRepository) CreateQuote(ctx context.Context, q *models.Quote) (int
 	return id, nil
 }
 
-func (qr QuoteRepository) QuotesAll(ctx context.Context) ([]models.Quote, error) {
+func (qr QuoteRepository) QuotesAll(ctx context.Context) (*[]models.Quote, error) {
 	query := `
-		SELECT id, author, text, created_at
+		SELECT id, author, quote, created_at
 		FROM quotesbook
 	`
 	rows, err := qr.db.Query(ctx, query)
@@ -55,7 +55,7 @@ func (qr QuoteRepository) QuotesAll(ctx context.Context) ([]models.Quote, error)
 	var quotes []models.Quote
     for rows.Next() {
         var quote models.Quote
-        if err := rows.Scan(&quote.ID, &quote.Author, &quote.Text, &quote.CreatedAt); err != nil {
+        if err := rows.Scan(&quote.ID, &quote.Author, &quote.Quote, &quote.CreatedAt); err != nil {
             return nil, errdefs.Wrapf(errdefs.ErrDB, "failed to scan quote: %v", err)
         }
         quotes = append(quotes, quote)
@@ -65,12 +65,12 @@ func (qr QuoteRepository) QuotesAll(ctx context.Context) ([]models.Quote, error)
 		return nil, errdefs.Wrapf(errdefs.ErrDB, "rows iteration error: %v", rows.Err())
 	}
 
-	return quotes, nil
+	return &quotes, nil
 }
 
-func (qr QuoteRepository) QuoteByAuthor(ctx context.Context, author string) ([]models.Quote, error) {
+func (qr QuoteRepository) QuoteByAuthor(ctx context.Context, author string) (*[]models.Quote, error) {
     query := `
-        SELECT id, author, text, created_at
+        SELECT id, author, quote, created_at
         FROM quotesbook
         WHERE author = $1
     `
@@ -84,7 +84,7 @@ func (qr QuoteRepository) QuoteByAuthor(ctx context.Context, author string) ([]m
 	var quotes []models.Quote
     for rows.Next() {
         var quote models.Quote
-        if err := rows.Scan(&quote.ID, &quote.Author, &quote.Text, &quote.CreatedAt); err != nil {
+        if err := rows.Scan(&quote.ID, &quote.Author, &quote.Quote, &quote.CreatedAt); err != nil {
             return nil, errdefs.Wrapf(errdefs.ErrDB, "failed to scan quote: %v", err)
         }
         quotes = append(quotes, quote)
@@ -94,19 +94,19 @@ func (qr QuoteRepository) QuoteByAuthor(ctx context.Context, author string) ([]m
         return nil, errdefs.Wrapf(errdefs.ErrDB, "rows iteration error: %v", rows.Err())
     }
 
-	return quotes, nil
+	return &quotes, nil
 }
 
 func (qr QuoteRepository) RandQuote(ctx context.Context) (*models.Quote, error) {
 	query := `
-        SELECT id, author, text, created_at
+        SELECT id, author, quote, created_at
         FROM quotesbook
         ORDER BY RANDOM()
         LIMIT 1
     `
 
     var quote models.Quote
-    err := qr.db.QueryRow(ctx, query).Scan(&quote.ID, &quote.Author, &quote.Text, &quote.CreatedAt)
+    err := qr.db.QueryRow(ctx, query).Scan(&quote.ID, &quote.Author, &quote.Quote, &quote.CreatedAt)
     if err != nil {
         if errdefs.Is(err, pgx.ErrNoRows) {
 		    return nil, errdefs.ErrNotFound

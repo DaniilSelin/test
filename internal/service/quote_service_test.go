@@ -3,19 +3,16 @@ package service
 
 import (
     "context"
-    "errors"
     "log"
     "testing"
     "time"
 
     "github.com/stretchr/testify/mock"
     "github.com/stretchr/testify/require"
-    "github.com/stretchr/testify/suite"
 
-    "QuoteBook/config"
-    "QuoteBook/internal/errdefs"
-    "QuoteBook/internal/models"
-    "QuoteBook/internal/interfaces"
+    "quotebook/config"
+    "quotebook/internal/errdefs"
+    "quotebook/internal/models"
 )
 
 type MockQuoteRepository struct {
@@ -27,14 +24,14 @@ func (m *MockQuoteRepository) CreateQuote(ctx context.Context, q *models.Quote) 
     return args.Int(0), args.Error(1)
 }
 
-func (m *MockQuoteRepository) QuotesAll(ctx context.Context) ([]models.Quote, error) {
+func (m *MockQuoteRepository) QuotesAll(ctx context.Context) (*[]models.Quote, error) {
     args := m.Called(ctx)
-    return args.Get(0).([]models.Quote), args.Error(1)
+    return args.Get(0).(*[]models.Quote), args.Error(1)
 }
 
-func (m *MockQuoteRepository) QuoteByAuthor(ctx context.Context, author string) ([]models.Quote, error) {
+func (m *MockQuoteRepository) QuoteByAuthor(ctx context.Context, author string) (*[]models.Quote, error) {
     args := m.Called(ctx, author)
-    return args.Get(0).([]models.Quote), args.Error(1)
+    return args.Get(0).(*[]models.Quote), args.Error(1)
 }
 
 func (m *MockQuoteRepository) RandQuote(ctx context.Context) (*models.Quote, error) {
@@ -59,15 +56,14 @@ func TestCreateQuote_Success(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
     q := &models.Quote{
         Author:    "Author1",
-        Text:      "Sample text",
+        Quote:      "Sample text",
         CreatedAt: time.Now(),
     }
 
-    // Expect repository CreateQuote to be called once with (ctx, q) and return id=123, nil
     mockRepo.On("CreateQuote", ctx, q).Return(123, nil).Once()
 
     id, err := svc.CreateQuote(ctx, q)
@@ -81,12 +77,11 @@ func TestCreateQuote_InvalidInput(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
-    // Empty Author should return ErrInvalidInput without calling repo
     q := &models.Quote{
         Author:    "",
-        Text:      "No author",
+        Quote:      "No author",
         CreatedAt: time.Now(),
     }
 
@@ -94,7 +89,6 @@ func TestCreateQuote_InvalidInput(t *testing.T) {
     require.Equal(t, 0, id)
     require.ErrorIs(t, err, errdefs.ErrInvalidInput)
 
-    // Repo should not be called
     mockRepo.AssertNotCalled(t, "CreateQuote", mock.Anything, mock.Anything)
 }
 
@@ -102,11 +96,11 @@ func TestQuotesAll_Success(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
-    expected := []models.Quote{
-        {ID: 1, Author: "A1", Text: "T1", CreatedAt: time.Now()},
-        {ID: 2, Author: "A2", Text: "T2", CreatedAt: time.Now()},
+    expected := &[]models.Quote{
+        {ID: 1, Author: "A1", Quote: "T1", CreatedAt: time.Now()},
+        {ID: 2, Author: "A2", Quote: "T2", CreatedAt: time.Now()},
     }
 
     mockRepo.On("QuotesAll", ctx).Return(expected, nil).Once()
@@ -122,9 +116,10 @@ func TestQuotesAll_Error(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
-    mockRepo.On("QuotesAll", ctx).Return([]models.Quote{}, errdefs.ErrDB).Once()
+    // тут требуется конкретный nil
+    mockRepo.On("QuotesAll", ctx).Return((*[]models.Quote)(nil), errdefs.ErrDB).Once()
 
     got, err := svc.QuotesAll(ctx)
     require.ErrorIs(t, err, errdefs.ErrDB)
@@ -137,10 +132,10 @@ func TestQuoteByAuthor_Success(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
-    expected := []models.Quote{
-        {ID: 1, Author: "AuthX", Text: "Tx", CreatedAt: time.Now()},
+    expected := &[]models.Quote{
+        {ID: 1, Author: "AuthX", Quote: "Tx", CreatedAt: time.Now()},
     }
 
     mockRepo.On("QuoteByAuthor", ctx, "AuthX").Return(expected, nil).Once()
@@ -156,9 +151,10 @@ func TestQuoteByAuthor_EmptyResult(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
-    mockRepo.On("QuoteByAuthor", ctx, "NoAuth").Return([]models.Quote{}, nil).Once()
+    // та же самая ситуация
+    mockRepo.On("QuoteByAuthor", ctx, "NoAuth").Return((*[]models.Quote)(nil), nil).Once()
 
     got, err := svc.QuoteByAuthor(ctx, "NoAuth")
     require.NoError(t, err)
@@ -171,9 +167,9 @@ func TestRandQuote_Success(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
-    expected := &models.Quote{ID: 42, Author: "RAuthor", Text: "RText", CreatedAt: time.Now()}
+    expected := &models.Quote{ID: 42, Author: "RAuthor", Quote: "RText", CreatedAt: time.Now()}
     mockRepo.On("RandQuote", ctx).Return(expected, nil).Once()
 
     got, err := svc.RandQuote(ctx)
@@ -187,7 +183,7 @@ func TestRandQuote_NotFound(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
     mockRepo.On("RandQuote", ctx).Return((*models.Quote)(nil), errdefs.ErrNotFound).Once()
 
@@ -202,7 +198,7 @@ func TestDeleteQuote_Success(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
     mockRepo.On("DeleteQuote", ctx, 99).Return(nil).Once()
 
@@ -216,7 +212,7 @@ func TestDeleteQuote_NotFound(t *testing.T) {
     ctx := context.Background()
     cfg := loadTestConfig(t)
     mockRepo := new(MockQuoteRepository)
-    svc := service.NewQuoteService(cfg, mockRepo)
+    svc := NewQuoteService(cfg, mockRepo)
 
     mockRepo.On("DeleteQuote", ctx, 100).Return(errdefs.ErrNotFound).Once()
 

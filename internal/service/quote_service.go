@@ -2,15 +2,14 @@ package service
 
 import (
     "context"
-    "time"
 
-    "QuoteBook/internal/interfaces"
-    "QuoteBook/internal/logger"
-    "QuoteBook/internal/models"
-    "QuoteBook/internal/errdefs"
-    "QuoteBook/config"
+    "quotebook/internal/interfaces"
+    _ "quotebook/internal/logger"
+    "quotebook/internal/models"
+    "quotebook/internal/errdefs"
+    "quotebook/config"
 
-    "go.uber.org/zap"
+    _ "go.uber.org/zap"
 )
 
 type QuoteService struct {
@@ -32,18 +31,18 @@ func (qs QuoteService) CreateQuote(ctx context.Context, q *models.Quote) (int, e
     return qs.repo.CreateQuote(ctx, q)
 }
 
-func QuotesAll(ctx context.Context) (*[]models.Quote, error) {
+func (qs QuoteService) QuotesAll(ctx context.Context) (*[]models.Quote, error) {
     return qs.repo.QuotesAll(ctx)
 }
 
-func QuoteByAuthor(ctx context.Context, author string) (*[]models.Quote, error) {
+func (qs QuoteService) QuoteByAuthor(ctx context.Context, author string) (*[]models.Quote, error) {
     return qs.repo.QuoteByAuthor(ctx, author)
 }
 
-func RandQuote(ctx context.Context) (*models.Quote, error) { 
+func (qs QuoteService) RandQuote(ctx context.Context) (*models.Quote, error) { 
     return qs.repo.RandQuote(ctx)
 }
 
-func DeleteQuote(ctx context.Context, id string) error {
+func (qs QuoteService) DeleteQuote(ctx context.Context, id int) error {
     return qs.repo.DeleteQuote(ctx, id)
 }

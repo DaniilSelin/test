@@ -5,6 +5,6 @@ import "time"
 type Quote struct {
     ID        int    `json:"id,omitempty"`
     Author    string    `json:"author"`
-    Text      string    `json:"text"`
+    Quote      string    `json:"quote"`
     CreatedAt time.Time `json:"created_at,omitempty"`
 }

@@ -8,8 +8,8 @@ import (
 
 type IQuoteService interface {
     CreateQuote(ctx context.Context, b *models.Quote) (int, error)
-    QuotesAll(ctx context.Context) ([]models.Quote, error)
-    QuoteByAuthor(ctx context.Context, author string)
-    RandQuote(ctx context.Context)
-    DeleteQuote(ctx context.Context, id int)
+    QuotesAll(ctx context.Context) (*[]models.Quote, error)
+    QuoteByAuthor(ctx context.Context, author string) (*[]models.Quote, error)
+    RandQuote(ctx context.Context) (*models.Quote, error)
+    DeleteQuote(ctx context.Context, id int) error
 }

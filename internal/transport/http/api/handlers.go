@@ -9,20 +9,22 @@ import (
 
     "fmt"
 	"context"
+    "strconv"
 	"encoding/json"
 	"net/http"
 
 	"go.uber.org/zap"
     "github.com/google/uuid"
+    "github.com/gorilla/mux"
 )
 
 type Handler struct {
-	logger *h.logger.Logger
+	logger *logger.Logger
     cfg *config.Config
-	qbs interfaces.IQuoteBookService
+	qbs interfaces.IQuoteService
 }
 
-func NewHandler(lg *h.logger.Logger, cfg *config.Config, qbs interfaces.IquotebookService) *Handler {
+func NewHandler(lg *logger.Logger, cfg *config.Config, qbs interfaces.IQuoteService) *Handler {
 	return &Handler{
 		qbs: qbs,
 		logger: lg,
@@ -78,7 +80,7 @@ func (h *Handler) HandlePostQuote() http.Handler {
         }
 
         h.logger.Info(ctx, "Quote created",
-            zap.String("id", id),
+            zap.Int("id", id),
         )
 
         encode(w, r, http.StatusCreated, id)
@@ -95,7 +97,6 @@ func (h *Handler) HandleGetQuotes() http.Handler {
             zap.String("path", r.URL.Path),
         )
 
-        q := r.URL.Query()
         quotes, err := h.qbs.QuotesAll(ctx)
         if err != nil {
             handleServiceError(ctx, w, err)
@@ -149,7 +150,7 @@ func (h *Handler) HandleGetRandQuote() http.Handler {
         }
 
         h.logger.Info(ctx, "return random quote",
-            zap.String("id", quote.ID),
+            zap.Int("id", quote.ID),
         )
         encode(w, r, http.StatusOK, quote)
     })
@@ -166,7 +167,13 @@ func (h *Handler) HandleDeleteQuote() http.Handler {
         )
 
         vars := mux.Vars(r)
-        id := vars["id"]
+        idStr := vars["id"]
+        id, err := strconv.Atoi(idStr)
+        if err != nil {
+            handleServiceError(ctx, w, errdefs.ErrInvalidInput)
+            return
+        }
+
         if err := h.qbs.DeleteQuote(ctx, id); err != nil {
             handleServiceError(ctx, w, err)
             return
@@ -174,7 +181,7 @@ func (h *Handler) HandleDeleteQuote() http.Handler {
 
 
         h.logger.Info(ctx, "quote delete",
-            zap.String("id", id),
+            zap.Int("id", id),
         )
         w.WriteHeader(http.StatusNoContent)
     })

@@ -23,6 +23,7 @@ func New(cfg *config.Config) (*Logger, error) {
 	// Добавляем энкодер времени вручную
 	// Это функция, поэтому из yml его не достать
 	cfg.Logger.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	cfg.Logger.EncoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
 
 	logger, err := cfg.Logger.Build()
 	if err != nil {

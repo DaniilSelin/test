@@ -15,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var MigrationPath = "../../internal/database/migrations"
+var MigrationPath = "internal/database/migrations"
 
 func RunMigrations(ctx context.Context, cfg *config.Config, conn *pgxpool.Pool) error {
 

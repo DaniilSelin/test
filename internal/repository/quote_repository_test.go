@@ -37,6 +37,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	database.MigrationPath = "../../internal/database/migrations"
     if err := database.RunMigrations(ctx, cfg, db); err != nil {
         log.Fatalf("Failed run migrationы to database: %v", err)
     }
@@ -60,7 +61,7 @@ func TestQuoteRepository(t *testing.T) {
 
 		quote := &models.Quote{
 			Author:    "Author1",
-			Text:      "First quote text",
+			Quote:      "First quote text",
 			CreatedAt: time.Now(),
 		}
 
@@ -72,9 +73,9 @@ func TestQuoteRepository(t *testing.T) {
 		// QuotesAll
 		allQuotes, err := repo.QuotesAll(ctx)
 		require.NoError(t, err, "Error when fetching all quotes")
-		require.Len(t, allQuotes, 1, "Expected exactly one quote in table")
-		require.Equal(t, quote.Author, allQuotes[0].Author)
-		require.Equal(t, quote.Text, allQuotes[0].Text)
+		require.Len(t, *allQuotes, 1, "Expected exactly one quote in table")
+		require.Equal(t, quote.Author, (*allQuotes)[0].Author)
+		require.Equal(t, quote.Quote, (*allQuotes)[0].Quote)
 
 		// Delete
 		err = repo.DeleteQuote(ctx, id)
@@ -82,7 +83,7 @@ func TestQuoteRepository(t *testing.T) {
 
 		allQuotesAfter, err := repo.QuotesAll(ctx)
 		require.NoError(t, err)
-		require.Len(t, allQuotesAfter, 0, "Expected table to be empty after deletion")
+		require.Len(t, *allQuotesAfter, 0, "Expected table to be empty after deletion")
 	})
 
 	t.Run("QuoteByAuthor", func(t *testing.T) {
@@ -90,17 +91,17 @@ func TestQuoteRepository(t *testing.T) {
 
 		quote1 := &models.Quote{
 			Author:    "CommonAuthor",
-			Text:      "Text A",
+			Quote:      "Text A",
 			CreatedAt: time.Now(),
 		}
 		quote2 := &models.Quote{
 			Author:    "CommonAuthor",
-			Text:      "Text B",
+			Quote:      "Text B",
 			CreatedAt: time.Now(),
 		}
 		quote3 := &models.Quote{
 			Author:    "OtherAuthor",
-			Text:      "Text C",
+			Quote:      "Text C",
 			CreatedAt: time.Now(),
 		}
 
@@ -113,14 +114,14 @@ func TestQuoteRepository(t *testing.T) {
 
 		byAuthor, err := repo.QuoteByAuthor(ctx, "CommonAuthor")
 		require.NoError(t, err, "Error when fetching quotes by author")
-		require.Len(t, byAuthor, 2, "Expected two quotes for author CommonAuthor")
-		for _, q := range byAuthor {
+		require.Len(t, *byAuthor, 2, "Expected two quotes for author CommonAuthor")
+		for _, q := range *byAuthor {
 			require.Equal(t, "CommonAuthor", q.Author)
 		}
 
 		emptyBy, err := repo.QuoteByAuthor(ctx, "NoSuchAuthor")
 		require.NoError(t, err)
-		require.Len(t, emptyBy, 0, "Expected empty result for non-existent author")
+		require.Len(t, *emptyBy, 0, "Expected empty result for non-existent author")
 	})
 
 	t.Run("RandQuoteEmpty", func(t *testing.T) {
@@ -137,7 +138,7 @@ func TestQuoteRepository(t *testing.T) {
 
 		quote := &models.Quote{
 			Author:    "SoloAuthor",
-			Text:      "Only quote",
+			Quote:      "Only quote",
 			CreatedAt: time.Now(),
 		}
 		id, err := repo.CreateQuote(ctx, quote)
@@ -147,7 +148,7 @@ func TestQuoteRepository(t *testing.T) {
 		got, err := repo.RandQuote(ctx)
 		require.NoError(t, err, "Error when fetching random quote")
 		require.Equal(t, quote.Author, got.Author)
-		require.Equal(t, quote.Text, got.Text)
+		require.Equal(t, quote.Quote, got.Quote)
 	})
 
 	t.Run("DeleteNotFound", func(t *testing.T) {
